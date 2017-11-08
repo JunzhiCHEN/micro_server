@@ -4,7 +4,7 @@ from flask_restful import Resource
 from flask_restful import reqparse
 from common.im import Im
 from const.const import APP_SERECT
-class AddImUser(Resource):
+class UpdateImUser(Resource):
     def __init__(self):
         self.get_args = reqparse.RequestParser()
         # Token: first headers, second cookies, last args
@@ -39,7 +39,17 @@ class AddImUser(Resource):
         verify_checksum = hashlib.sha1(APP_SERECT + self.args["Md5"] + self.args["Curtime"]).hexdigest()
         if verify_md5 == self.args["Md5"] and self.args["Checksum"] == verify_checksum :
             im = Im()
-            if not im.check_accid(data.get("accid", "")):
+            if im.check_accid(data.get("accid", "")):
+                print "----------------------"
+                update_data = self.get_update_data(data)
+                try:
+                    flag = im.update_im_user_info(update_data)
+                    msg = "update success" if flag else "update failed"
+                except (BaseException), x:
+                    return {"error_code": 500, "msg": x, "result": False}
+                else:
+                    return {"error_code": 200, "msg": msg, "result": flag}
+            else:
                 try:
                     flag = Im().add_im_user_info(data)
                     msg = "save success" if flag else "save failed"
@@ -47,6 +57,28 @@ class AddImUser(Resource):
                     return {"error_code": 500, "msg": x, "result": False}
                 else:
                     return {"error_code": 200, "msg": msg, "result": flag}
-            else:
-                return {"error_code": 2002, "msg": "accid already existed", "result": False}
+
         return {"error_code": 2001, "msg": "no pass the check!"}
+
+
+    def get_update_data(self, data={}):
+        update_data = {}
+        if data["accid"]:
+            update_data["accid"] = data.get("accid", "")
+        if data["name"]:
+            update_data["name"] = data.get("name", "")
+        if data["gender"]:
+            update_data["gender"] = data.get("gender", 0)
+        if data["icon"]:
+            update_data["icon"] = data.get("icon", "")
+        if data["sign"]:
+            update_data["sign"] = data.get("sign", "")
+        if data["email"]:
+            update_data["email"] = data.get("email", "")
+        if data["birth"]:
+            update_data["birth"] = data.get("birth", "")
+        if data["mobile"]:
+            update_data["mobile"] = data.get("mobile", "")
+        if data["ex"]:
+            update_data["ex"] = data.get("ex", "")
+        return update_data
